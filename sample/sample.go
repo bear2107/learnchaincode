@@ -1,103 +1,136 @@
-﻿package main
+package main
 
 import (
         "errors"
         "fmt"
-      
+
 
         "github.com/hyperledger/fabric/core/chaincode/shim"
 )
 
-
-
-type SimpleChaincode struct {
+// CrowdFundChaincode implementation
+type CrowdFundChaincode struct {
 }
 
+//
+// Init creates the state variable with name "account" and stores the value
+// from the incoming request into this variable. We now have a key/value pair
+// for account --> accountValue.
+//
+func (t *CrowdFundChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+        // State variable "account"
+        var account string
+ // The value stored inside the state variable "account"
+        var accountValue  string
+        // Any error to be reported back to the client
+        var err error
 
+        if len(args) != 2 {
+                return nil, errors.New("Incorrect number of arguments. Expecting 2.")
+        }
 
+        // Initialize the state variable name
+        account = args[0]
+        // Initialize the state variable value
+        accountValue  = args[1]
+//      if err != nil {
+//              return nil, errors.New("Expecting integer value for account initialization.")
+//      }
 
+//      fmt.Printf("accountValue = %d\n", accountValue)
 
+        // Write the state to the ledger
+         err = stub.PutState(account, []byte(accountValue))
+        if err != nil {
+                return nil, err
+        }
 
-func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-    if len(args) != 1 {
-        return nil, errors.New("Incorrect number of arguments. Expecting 1")
-    }
-
-    err := stub.PutState("hello_world", []byte(args[0]))
-    if err != nil {
-        return nil, err
-    }
-
-    return nil, nil
+        return nil, nil
 }
 
+//
+// Invoke retrieves the state variable "account" and increases it by the ammount
+// specified in the incoming request. Then it stores the new value back, thus
+// updating the ledger.
+//
+func (t *CrowdFundChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+        // State variable "account"
+        var account string
+        // The value stored inside the state variable "account"
+        var accountValue string
+        // The ammount by which to increase the state variable
+        // Any error to be reported back to the client
+        var err error
 
-func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-    fmt.Println("invoke is running " + function)
+        if len(args) != 2 {
+                return nil, errors.New("Incorrect number of arguments. Expecting 2.")
 
-    // Handle different functions
-    if function == "init" {
-        return t.Init(stub, "init", args)
-    } else if function == "write" {
-        return t.write(stub, args)
-    }
-    fmt.Println("invoke did not find func: " + function)
+  // Read in the name of the state variable to be updated
+        account = args[0]
 
-    return nil, errors.New("Received unknown function invocation: " + function)
+        accountValue = args[1]
+
+        // Get the current value of the state variable
+//      accountValue, _ = strconv.Atoi(string(accountValueBytes))
+
+        // Update the "account" state variable
+//      increaseBy, err = strconv.Atoi(args[1])
+//      if err != nil {
+//              return nil, errors.New("Invalid transaction amount, expecting a integer value.")
+//      }
+//      accountValue = accountValue + increaseBy
+//      fmt.Printf("accountValue = %d\n", accountValue)
+
+        // Write the state back to the ledger
+        err = stub.PutState(account, []byte(accountValue))
+ if err != nil {
+                return nil, err
+        }
+
+        return nil, nil
 }
 
-func (t *SimpleChaincode) write(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-    var key, value string
-    var err error
-    fmt.Println("running write()")
+//
+// Query retrieves the state variable "account" and returns its current value
+// in the response.
+//
+func (t *CrowdFundChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+        if function != "query" {
+                return nil, errors.New("Invalid query function name. Expecting \"query\".")
+        }
 
-    if len(args) != 2 {
-        return nil, errors.New("Incorrect number of arguments. Expecting 2. name of the key and value to set")
-    }
+        // State variable "account"
+        var account string
+        // Any error to be reported back to the client
+        var err error
+ if len(args) != 1 {
+                return nil, errors.New("Incorrect number of arguments. Expecting name of the state variable to query.")
+        }
 
-    key = args[0]                            //rename for fun
-    value = args[1]
-    err = stub.PutState(key, []byte(value))  //write the variable into the chaincode state
-    if err != nil {
-        return nil, err
-    }
-    return nil, nil
-}
+        // Read in the name of the state variable to be returned
+        account = args[0]
 
-func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
-    fmt.Println("query is running " + function)
+        // Get the current value of the state variable
+        accountValueBytes, err := stub.GetState(account)
+        if err != nil {
+                jsonResp := "{\"Error\":\"Failed to get state for " + account + "\"}"
+                return nil, errors.New(jsonResp)
+        }
+        if accountValueBytes == nil {
+                jsonResp := "{\"Error\":\"Nil amount for " + account + "\"}"
+                return nil, errors.New(jsonResp)
+        }
 
-    // Handle different functions
-    if function == "read" {                            //read a variable
-        return t.read(stub, args)
-    }
-    fmt.Println("query did not find func: " + function)
-
-    return nil, errors.New("Received unknown function query: " + function)
-}
-
-
-func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-    var key, jsonResp string
-    var err error
-
-    if len(args) != 1 {
-        return nil, errors.New("Incorrect number of arguments. Expecting name of the key to query")
-    }
-
-    key = args[0]
-    valAsbytes, err := stub.GetState(key)
-    if err != nil {
-        jsonResp = "{\"Error\":\"Failed to get state for " + key + "\"}"
-        return nil, errors.New(jsonResp)
-    }
-
-    return valAsbytes, nil
+        jsonResp := "{\"Name\":\"" + account + "\",\"Amount\":\"" + string(accountValueBytes) + "\"}"
+ fmt.Printf("Query Response:%s\n", jsonResp)
+        return accountValueBytes, nil
 }
 
 func main() {
-    err := shim.Start(new(SimpleChaincode))
-    if err != nil {
-        fmt.Printf("Error starting Simple chaincode: %s", err)
-    }
+        err := shim.Start(new(CrowdFundChaincode))
+
+        if err != nil {
+                fmt.Printf("Error starting CrowdFundChaincode: %s", err)
+        }
 }
+
