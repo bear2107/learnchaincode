@@ -14,7 +14,7 @@ type CrowdFundChaincode struct {
 type Info struct {
 
 qrcode string
-count int
+count string
 
 
 }
@@ -77,7 +77,7 @@ func (t *CrowdFundChaincode) Invoke(stub shim.ChaincodeStubInterface, function s
         account = args[0]
         newinfo := Info{
 	qrcode: args[1],
-        count: value}
+        count: args[2]}
         newinfobyte,err:=json.Marshal(newinfo)
         if err!=nil {
                 return nil,err
@@ -126,7 +126,7 @@ func (t *CrowdFundChaincode) Query(stub shim.ChaincodeStubInterface, function st
         if errUnmarshal!=nil {
                 return nil,errUnmarshal
         }
-        jsonResp := "{\"Name\":\"" + account + "\",\"qrcode\":\"" + information.qrcode + "\",\"count\":\"" + string(information.count) + "\"}"
+        jsonResp := "{\"Name\":\"" + account + "\",\"qrcode\":\"" + information.qrcode + "\",\"count\":\"" + information.count + "\"}"
         fmt.Printf("Query Response:%s\n", jsonResp)
         return accountValueBytes, nil
 }
