@@ -13,8 +13,8 @@ type CrowdFundChaincode struct {
 }
 type Info struct {
 
-qrcode string
-count string
+qrcode string `json:"qrcode"`   
+count string `json:"count"`   
 
 
 }
